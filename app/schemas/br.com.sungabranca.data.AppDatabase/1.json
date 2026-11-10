@@ -2,8 +2,70 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "ce6eec72add558acb80b0f36fde37dde",
+    "identityHash": "99e37c9c0b3eda81a6d3dd029417303a",
     "entities": [
+      {
+        "tableName": "profile",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `birthYear` INTEGER, `heightCm` REAL, `weightKg` REAL, `goal` TEXT NOT NULL, `experienceLevel` TEXT NOT NULL, `screeningCompletedAt` INTEGER, `screeningHasRiskFlag` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "birthYear",
+            "columnName": "birthYear",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "heightCm",
+            "columnName": "heightCm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "weightKg",
+            "columnName": "weightKg",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "goal",
+            "columnName": "goal",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "experienceLevel",
+            "columnName": "experienceLevel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "screeningCompletedAt",
+            "columnName": "screeningCompletedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "screeningHasRiskFlag",
+            "columnName": "screeningHasRiskFlag",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
       {
         "tableName": "exercises",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `muscleGroup` TEXT NOT NULL, `equipment` TEXT NOT NULL, `isCustom` INTEGER NOT NULL, `notes` TEXT NOT NULL)",
@@ -368,7 +430,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ce6eec72add558acb80b0f36fde37dde')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '99e37c9c0b3eda81a6d3dd029417303a')"
     ]
   }
 }

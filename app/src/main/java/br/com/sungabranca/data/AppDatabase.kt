@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [
+        ProfileEntity::class,
         ExerciseEntity::class,
         WorkoutEntity::class,
         WorkoutItemEntity::class,
