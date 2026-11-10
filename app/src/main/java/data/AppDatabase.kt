@@ -1,4 +1,13 @@
-package data
+package br.com.sungabranca.data
 
-class AppDatabase {
+import androidx.room.Database
+import androidx.room.RoomDatabase
+
+@Database(
+    entities = [ExerciseEntity::class],
+    version = 1,
+    exportSchema = true
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun exerciseDao(): ExerciseDao
 }
