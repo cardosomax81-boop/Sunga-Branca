@@ -7,7 +7,9 @@ import androidx.room.RoomDatabase
     entities = [
         ExerciseEntity::class,
         WorkoutEntity::class,
-        WorkoutItemEntity::class
+        WorkoutItemEntity::class,
+        SessionEntity::class,
+        SetLogEntity::class
     ],
     version = 1,
     exportSchema = true
