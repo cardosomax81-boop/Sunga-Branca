@@ -4,7 +4,11 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [ExerciseEntity::class, WorkoutEntity::class],
+    entities = [
+        ExerciseEntity::class,
+        WorkoutEntity::class,
+        WorkoutItemEntity::class
+    ],
     version = 1,
     exportSchema = true
 )
