@@ -17,6 +17,9 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE id = :id")
     suspend fun getById(id: Long): ExerciseEntity?
 
+    @Query("SELECT COUNT(*) FROM exercises WHERE isCustom = 0")
+    suspend fun countCatalog(): Int
+
     @Insert
     suspend fun insert(exercise: ExerciseEntity): Long
 
