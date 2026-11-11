@@ -18,4 +18,6 @@ import androidx.room.RoomDatabase
 abstract class AppDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun profileDao(): ProfileDao
+    abstract fun workoutDao(): WorkoutDao
+    abstract fun sessionDao(): SessionDao
 }
