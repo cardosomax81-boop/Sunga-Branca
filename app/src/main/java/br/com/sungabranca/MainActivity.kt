@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     if (tab == 0) {
                         ExercisesScreen(db.exerciseDao(), screenModifier)
                     } else {
-                        WorkoutsScreen(db.workoutDao(), screenModifier)
+                        WorkoutsScreen(db.workoutDao(), db.exerciseDao(), screenModifier)
                     }
                 }
             }

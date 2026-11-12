@@ -1,5 +1,6 @@
 package br.com.sungabranca
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,16 +27,35 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import br.com.sungabranca.data.ExerciseDao
 import br.com.sungabranca.data.WorkoutDao
 import br.com.sungabranca.data.WorkoutEntity
 import kotlinx.coroutines.launch
 
 @Composable
-fun WorkoutsScreen(dao: WorkoutDao, modifier: Modifier = Modifier) {
-    val workouts by remember { dao.observeWorkouts() }
+fun WorkoutsScreen(
+    workoutDao: WorkoutDao,
+    exerciseDao: ExerciseDao,
+    modifier: Modifier = Modifier
+) {
+    val workouts by remember { workoutDao.observeWorkouts() }
         .collectAsState(initial = emptyList())
     var showDialog by rememberSaveable { mutableStateOf(false) }
+    var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
     val scope = rememberCoroutineScope()
+
+    val selected = workouts.firstOrNull { it.id == selectedId }
+    if (selected != null) {
+        WorkoutDetailScreen(
+            workoutDao = workoutDao,
+            exerciseDao = exerciseDao,
+            workoutId = selected.id,
+            workoutName = selected.name,
+            onBack = { selectedId = null },
+            modifier = modifier
+        )
+        return
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column {
@@ -52,7 +72,10 @@ fun WorkoutsScreen(dao: WorkoutDao, modifier: Modifier = Modifier) {
             }
             LazyColumn(contentPadding = PaddingValues(bottom = 88.dp)) {
                 items(workouts, key = { it.id }) { workout ->
-                    ListItem(headlineContent = { Text(workout.name) })
+                    ListItem(
+                        headlineContent = { Text(workout.name) },
+                        modifier = Modifier.clickable { selectedId = workout.id }
+                    )
                     HorizontalDivider()
                 }
             }
@@ -72,7 +95,7 @@ fun WorkoutsScreen(dao: WorkoutDao, modifier: Modifier = Modifier) {
             onDismiss = { showDialog = false },
             onSave = { name ->
                 scope.launch {
-                    dao.insertWorkout(
+                    workoutDao.insertWorkout(
                         WorkoutEntity(
                             name = name,
                             notes = "",
