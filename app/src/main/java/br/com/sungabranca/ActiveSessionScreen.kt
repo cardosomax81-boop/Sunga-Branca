@@ -20,8 +20,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import br.com.sungabranca.data.SessionDao
 import br.com.sungabranca.data.SetLogEntity
 import br.com.sungabranca.data.WorkoutDao
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private fun formatWeight(w: Double): String =
@@ -55,7 +58,21 @@ fun ActiveSessionScreen(
         .collectAsState(initial = emptyList())
     var logExerciseId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showExit by rememberSaveable { mutableStateOf(false) }
+    var restEndAt by rememberSaveable { mutableStateOf<Long?>(null) }
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(restEndAt) {
+        val end = restEndAt
+        if (end != null) {
+            while (System.currentTimeMillis() < end) {
+                now = System.currentTimeMillis()
+                delay(250)
+            }
+            restEndAt = null
+        }
+    }
+    val restLeft: Long? = restEndAt?.let { ((it - now + 999) / 1000).coerceAtLeast(0) }
 
     BackHandler(onBack = { showExit = true })
 
@@ -83,6 +100,21 @@ fun ActiveSessionScreen(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(16.dp)
             )
+            if (restLeft != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Descanso: %d:%02d".format(restLeft / 60, restLeft % 60),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    TextButton(onClick = { restEndAt = null }) { Text("Pular") }
+                }
+            }
             LazyColumn(contentPadding = PaddingValues(bottom = 88.dp)) {
                 items(items, key = { it.item.id }) { row ->
                     val exerciseId = row.item.exerciseId
@@ -155,6 +187,8 @@ fun ActiveSessionScreen(
                         )
                     )
                 }
+                now = System.currentTimeMillis()
+                restEndAt = now + dialogRow.item.restSeconds * 1000L
                 logExerciseId = null
             }
         )
