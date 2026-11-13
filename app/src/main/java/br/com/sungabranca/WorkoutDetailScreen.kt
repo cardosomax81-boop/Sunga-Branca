@@ -29,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import br.com.sungabranca.data.ExerciseDao
+import br.com.sungabranca.data.SessionDao
+import br.com.sungabranca.data.SessionEntity
 import br.com.sungabranca.data.WorkoutDao
 import br.com.sungabranca.data.WorkoutItemEntity
 import kotlinx.coroutines.launch
@@ -37,12 +39,14 @@ import kotlinx.coroutines.launch
 fun WorkoutDetailScreen(
     workoutDao: WorkoutDao,
     exerciseDao: ExerciseDao,
+    sessionDao: SessionDao,
     workoutId: Long,
     workoutName: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BackHandler(onBack = onBack)
+    var activeSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
+    BackHandler(enabled = activeSessionId == null, onBack = onBack)
 
     val workoutItems by remember(workoutId) { workoutDao.observeItems(workoutId) }
         .collectAsState(initial = emptyList())
@@ -51,11 +55,42 @@ fun WorkoutDetailScreen(
     var showPicker by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    val sessionId = activeSessionId
+    if (sessionId != null) {
+        ActiveSessionScreen(
+            sessionDao = sessionDao,
+            workoutDao = workoutDao,
+            sessionId = sessionId,
+            workoutId = workoutId,
+            workoutName = workoutName,
+            onClose = { activeSessionId = null },
+            modifier = modifier
+        )
+        return
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onBack) { Text("Voltar") }
-                Text(text = workoutName, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = workoutName,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            activeSessionId = sessionDao.insertSession(
+                                SessionEntity(
+                                    workoutId = workoutId,
+                                    workoutName = workoutName
+                                )
+                            )
+                        }
+                    },
+                    enabled = workoutItems.isNotEmpty()
+                ) { Text("Iniciar treino") }
             }
             if (workoutItems.isEmpty()) {
                 Text(
