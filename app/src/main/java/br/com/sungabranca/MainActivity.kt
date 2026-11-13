@@ -41,14 +41,25 @@ class MainActivity : ComponentActivity() {
                                 icon = {},
                                 label = { Text("Treinos") }
                             )
+                            NavigationBarItem(
+                                selected = tab == 2,
+                                onClick = { tab = 2 },
+                                icon = {},
+                                label = { Text("Histórico") }
+                            )
                         }
                     }
                 ) { innerPadding ->
                     val screenModifier = Modifier.padding(innerPadding)
-                    if (tab == 0) {
-                        ExercisesScreen(db.exerciseDao(), screenModifier)
-                    } else {
-                        WorkoutsScreen(db.workoutDao(), db.exerciseDao(), db.sessionDao(), screenModifier)
+                    when (tab) {
+                        0 -> ExercisesScreen(db.exerciseDao(), screenModifier)
+                        1 -> WorkoutsScreen(
+                            db.workoutDao(),
+                            db.exerciseDao(),
+                            db.sessionDao(),
+                            screenModifier
+                        )
+                        else -> HistoryScreen(db.sessionDao(), db.exerciseDao(), screenModifier)
                     }
                 }
             }
