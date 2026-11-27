@@ -45,8 +45,12 @@ fun WorkoutDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var activeSessionId by rememberSaveable { mutableStateOf<Long?>(null) }
-    BackHandler(enabled = activeSessionId == null, onBack = onBack)
+    val sessions by remember { sessionDao.observeSessions() }
+        .collectAsState(initial = emptyList())
+    val sessionId: Long? = sessions
+        .firstOrNull { it.workoutId == workoutId && it.finishedAt == null }
+        ?.id
+    BackHandler(enabled = sessionId == null, onBack = onBack)
 
     val workoutItems by remember(workoutId) { workoutDao.observeItems(workoutId) }
         .collectAsState(initial = emptyList())
@@ -55,7 +59,6 @@ fun WorkoutDetailScreen(
     var showPicker by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val sessionId = activeSessionId
     if (sessionId != null) {
         ActiveSessionScreen(
             sessionDao = sessionDao,
@@ -63,7 +66,7 @@ fun WorkoutDetailScreen(
             sessionId = sessionId,
             workoutId = workoutId,
             workoutName = workoutName,
-            onClose = { activeSessionId = null },
+            onClose = { },
             modifier = modifier
         )
         return
@@ -81,7 +84,7 @@ fun WorkoutDetailScreen(
                 TextButton(
                     onClick = {
                         scope.launch {
-                            activeSessionId = sessionDao.insertSession(
+                            sessionDao.insertSession(
                                 SessionEntity(
                                     workoutId = workoutId,
                                     workoutName = workoutName
