@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -54,13 +55,34 @@ fun ActiveSessionScreen(
 ) {
     val items by remember(workoutId) { workoutDao.observeItems(workoutId) }
         .collectAsState(initial = emptyList())
-    val logs by remember(sessionId) { sessionDao.observeSetLogs(sessionId) }
-        .collectAsState(initial = emptyList())
+    val logsState by remember(sessionId) { sessionDao.observeSetLogs(sessionId) }
+        .collectAsState(initial = null)
+    val logs = logsState ?: emptyList()
     var logExerciseId by rememberSaveable { mutableStateOf<Long?>(null) }
     var showExit by rememberSaveable { mutableStateOf(false) }
     var restEndAt by rememberSaveable { mutableStateOf<Long?>(null) }
+    var restChecked by rememberSaveable { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val scope = rememberCoroutineScope()
+
+    // Ao reabrir a sessão, recalcula o descanso a partir da última série salva.
+    LaunchedEffect(logsState, items) {
+        val loaded = logsState
+        if (!restChecked && loaded != null && items.isNotEmpty()) {
+            restChecked = true
+            val last = loaded.maxByOrNull { it.completedAt }
+            val restSeconds = last?.let { l ->
+                items.firstOrNull { it.item.exerciseId == l.exerciseId }?.item?.restSeconds
+            }
+            if (last != null && restSeconds != null && restEndAt == null) {
+                val end = last.completedAt + restSeconds * 1000L
+                if (end > System.currentTimeMillis()) {
+                    now = System.currentTimeMillis()
+                    restEndAt = end
+                }
+            }
+        }
+    }
 
     LaunchedEffect(restEndAt) {
         val end = restEndAt
@@ -93,6 +115,11 @@ fun ActiveSessionScreen(
         }
     }
 
+    // Primeiro exercício que ainda não atingiu o número de séries planejadas.
+    val currentRow = items.firstOrNull { row ->
+        logs.count { it.exerciseId == row.item.exerciseId } < row.item.plannedSets
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column {
             Text(
@@ -100,6 +127,21 @@ fun ActiveSessionScreen(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(16.dp)
             )
+            if (logsState != null && items.isNotEmpty()) {
+                val progressText = if (currentRow != null) {
+                    val done = logs.count { it.exerciseId == currentRow.item.exerciseId }
+                    "Agora: ${currentRow.exercise.name} · série ${done + 1} de ${currentRow.item.plannedSets}"
+                } else {
+                    "Plano completo! Toque em Finalizar treino para salvar."
+                }
+                Text(
+                    text = progressText,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
             if (restLeft != null) {
                 Row(
                     modifier = Modifier
@@ -119,7 +161,15 @@ fun ActiveSessionScreen(
                 items(items, key = { it.item.id }) { row ->
                     val exerciseId = row.item.exerciseId
                     val exLogs = logs.filter { it.exerciseId == exerciseId }
+                    val isCurrent = currentRow?.item?.id == row.item.id
                     Card(
+                        colors = if (isCurrent) {
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        } else {
+                            CardDefaults.cardColors()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -131,6 +181,7 @@ fun ActiveSessionScreen(
                                         "${row.item.plannedRepsMin}-${row.item.plannedRepsMax}" +
                                         " · descanso ${row.item.restSeconds}s"
                             )
+                            Text("Feitas: ${exLogs.size} de ${row.item.plannedSets}")
                             exLogs.forEach { log ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -147,7 +198,7 @@ fun ActiveSessionScreen(
                                 }
                             }
                             TextButton(onClick = { logExerciseId = exerciseId }) {
-                                Text("Registrar série")
+                                Text("Registrar série ${exLogs.size + 1}")
                             }
                         }
                     }
