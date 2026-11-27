@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -19,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import br.com.sungabranca.data.ExerciseDao
 import br.com.sungabranca.data.SessionDao
 import br.com.sungabranca.data.SessionEntity
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -113,6 +116,8 @@ private fun SessionDetailScreen(
         .collectAsState(initial = emptyList())
     val names = exercises.associate { it.id to it.name }
     val grouped = logs.groupBy { it.exerciseId }
+    val scope = rememberCoroutineScope()
+    var showDiscard by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -124,10 +129,23 @@ private fun SessionDetailScreen(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         if (session.finishedAt == null) {
-            Button(
-                onClick = { session.workoutId?.let(onResume) },
-                modifier = Modifier.padding(16.dp)
-            ) { Text("Continuar treino") }
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Button(
+                    onClick = { session.workoutId?.let(onResume) },
+                    enabled = session.workoutId != null
+                ) { Text("Continuar treino") }
+                Row {
+                    TextButton(onClick = {
+                        scope.launch {
+                            val end = (logs.maxOfOrNull { it.completedAt }
+                                ?: System.currentTimeMillis())
+                                .coerceAtLeast(session.startedAt)
+                            sessionDao.updateSession(session.copy(finishedAt = end))
+                        }
+                    }) { Text("Finalizar") }
+                    TextButton(onClick = { showDiscard = true }) { Text("Descartar") }
+                }
+            }
         }
         if (logs.isEmpty()) {
             Text(
@@ -151,5 +169,22 @@ private fun SessionDetailScreen(
                 }
             }
         }
+    }
+
+    if (showDiscard) {
+        AlertDialog(
+            onDismissRequest = { showDiscard = false },
+            title = { Text("Descartar treino?") },
+            text = { Text("Isso apaga o treino e todas as séries registradas nele. Não dá para desfazer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscard = false
+                    scope.launch { sessionDao.deleteSession(session) }
+                }) { Text("Descartar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscard = false }) { Text("Cancelar") }
+            }
+        )
     }
 }
