@@ -49,6 +49,12 @@ class MainActivity : ComponentActivity() {
                                 icon = {},
                                 label = { Text("Histórico") }
                             )
+                            NavigationBarItem(
+                                selected = tab == 3,
+                                onClick = { tab = 3; resumeWorkoutId = null },
+                                icon = {},
+                                label = { Text("Backup") }
+                            )
                         }
                     }
                 ) { innerPadding ->
@@ -62,7 +68,7 @@ class MainActivity : ComponentActivity() {
                             initialWorkoutId = resumeWorkoutId,
                             modifier = screenModifier
                         )
-                        else -> HistoryScreen(
+                        2 -> HistoryScreen(
                             sessionDao = db.sessionDao(),
                             exerciseDao = db.exerciseDao(),
                             onResume = { workoutId ->
@@ -71,6 +77,7 @@ class MainActivity : ComponentActivity() {
                             },
                             modifier = screenModifier
                         )
+                        else -> BackupScreen(db = db, modifier = screenModifier)
                     }
                 }
             }
