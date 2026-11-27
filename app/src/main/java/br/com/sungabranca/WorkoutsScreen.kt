@@ -38,12 +38,13 @@ fun WorkoutsScreen(
     workoutDao: WorkoutDao,
     exerciseDao: ExerciseDao,
     sessionDao: SessionDao,
+    initialWorkoutId: Long? = null,
     modifier: Modifier = Modifier
 ) {
     val workouts by remember { workoutDao.observeWorkouts() }
         .collectAsState(initial = emptyList())
     var showDialog by rememberSaveable { mutableStateOf(false) }
-    var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var selectedId by rememberSaveable { mutableStateOf<Long?>(initialWorkoutId) }
     val scope = rememberCoroutineScope()
 
     val selected = workouts.firstOrNull { it.id == selectedId }

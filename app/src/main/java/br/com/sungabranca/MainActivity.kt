@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -25,25 +26,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             SungaBrancaTheme {
                 var tab by rememberSaveable { mutableIntStateOf(0) }
+                var resumeWorkoutId by rememberSaveable { mutableStateOf<Long?>(null) }
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
                         NavigationBar {
                             NavigationBarItem(
                                 selected = tab == 0,
-                                onClick = { tab = 0 },
+                                onClick = { tab = 0; resumeWorkoutId = null },
                                 icon = {},
                                 label = { Text("Exercícios") }
                             )
                             NavigationBarItem(
                                 selected = tab == 1,
-                                onClick = { tab = 1 },
+                                onClick = { tab = 1; resumeWorkoutId = null },
                                 icon = {},
                                 label = { Text("Treinos") }
                             )
                             NavigationBarItem(
                                 selected = tab == 2,
-                                onClick = { tab = 2 },
+                                onClick = { tab = 2; resumeWorkoutId = null },
                                 icon = {},
                                 label = { Text("Histórico") }
                             )
@@ -54,12 +56,21 @@ class MainActivity : ComponentActivity() {
                     when (tab) {
                         0 -> ExercisesScreen(db.exerciseDao(), screenModifier)
                         1 -> WorkoutsScreen(
-                            db.workoutDao(),
-                            db.exerciseDao(),
-                            db.sessionDao(),
-                            screenModifier
+                            workoutDao = db.workoutDao(),
+                            exerciseDao = db.exerciseDao(),
+                            sessionDao = db.sessionDao(),
+                            initialWorkoutId = resumeWorkoutId,
+                            modifier = screenModifier
                         )
-                        else -> HistoryScreen(db.sessionDao(), db.exerciseDao(), screenModifier)
+                        else -> HistoryScreen(
+                            sessionDao = db.sessionDao(),
+                            exerciseDao = db.exerciseDao(),
+                            onResume = { workoutId ->
+                                resumeWorkoutId = workoutId
+                                tab = 1
+                            },
+                            modifier = screenModifier
+                        )
                     }
                 }
             }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,7 @@ private fun describeSession(s: SessionEntity): String {
 fun HistoryScreen(
     sessionDao: SessionDao,
     exerciseDao: ExerciseDao,
+    onResume: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sessions by remember { sessionDao.observeSessions() }
@@ -63,6 +65,7 @@ fun HistoryScreen(
             sessionDao = sessionDao,
             exerciseDao = exerciseDao,
             onBack = { selectedId = null },
+            onResume = onResume,
             modifier = modifier
         )
         return
@@ -99,6 +102,7 @@ private fun SessionDetailScreen(
     sessionDao: SessionDao,
     exerciseDao: ExerciseDao,
     onBack: () -> Unit,
+    onResume: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
@@ -119,6 +123,12 @@ private fun SessionDetailScreen(
             text = describeSession(session),
             modifier = Modifier.padding(horizontal = 16.dp)
         )
+        if (session.finishedAt == null) {
+            Button(
+                onClick = { session.workoutId?.let(onResume) },
+                modifier = Modifier.padding(16.dp)
+            ) { Text("Continuar treino") }
+        }
         if (logs.isEmpty()) {
             Text(
                 text = "Nenhuma série registrada neste treino.",
