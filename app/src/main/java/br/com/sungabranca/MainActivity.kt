@@ -53,6 +53,12 @@ class MainActivity : ComponentActivity() {
                                 selected = tab == 3,
                                 onClick = { tab = 3; resumeWorkoutId = null },
                                 icon = {},
+                                label = { Text("Evolução") }
+                            )
+                            NavigationBarItem(
+                                selected = tab == 4,
+                                onClick = { tab = 4; resumeWorkoutId = null },
+                                icon = {},
                                 label = { Text("Backup") }
                             )
                         }
@@ -75,6 +81,11 @@ class MainActivity : ComponentActivity() {
                                 resumeWorkoutId = workoutId
                                 tab = 1
                             },
+                            modifier = screenModifier
+                        )
+                        3 -> ProgressScreen(
+                            sessionDao = db.sessionDao(),
+                            exerciseDao = db.exerciseDao(),
                             modifier = screenModifier
                         )
                         else -> BackupScreen(db = db, modifier = screenModifier)

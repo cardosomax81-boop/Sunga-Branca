@@ -42,4 +42,26 @@ interface SessionDao {
 
     @Delete
     suspend fun deleteSetLog(setLog: SetLogEntity)
+
+    @Query("SELECT DISTINCT exerciseId FROM set_logs")
+    fun observeLoggedExerciseIds(): Flow<List<Long>>
+
+    @Query(
+        """
+        SELECT s.id AS sessionId, s.startedAt AS startedAt,
+               l.weightKg AS weightKg, l.reps AS reps
+        FROM set_logs l
+        INNER JOIN sessions s ON s.id = l.sessionId
+        WHERE l.exerciseId = :exerciseId
+        ORDER BY s.startedAt DESC, l.setNumber
+        """
+    )
+    fun observeSetPoints(exerciseId: Long): Flow<List<SetPoint>>
 }
+
+data class SetPoint(
+    val sessionId: Long,
+    val startedAt: Long,
+    val weightKg: Double,
+    val reps: Int
+)
