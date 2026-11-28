@@ -1,8 +1,9 @@
 package br.com.sungabranca
 
-import androidx.compose.foundation.clickable
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -34,7 +35,6 @@ import java.util.Date
 import java.util.Locale
 
 private val progressDateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.forLanguageTag("pt-BR"))
-
 
 private fun formatLoad(w: Double): String =
     if (w % 1.0 == 0.0) w.toInt().toString()
@@ -147,15 +147,37 @@ private fun ProgressDetail(
             )
         }
         if (summaries.size >= 2) {
+            val chronological = summaries.reversed()
+            val loads = chronological.map { it.topWeight }
             Text(
                 text = "Maior carga por treino (do mais antigo ao mais recente)",
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)
             )
-            WeightChart(
-                values = summaries.reversed().map { it.topWeight },
+            Text(
+                text = "Máx. ${formatLoad(loads.max())} kg · Mín. ${formatLoad(loads.min())} kg",
+                style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
+            WeightChart(
+                values = loads,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = progressDateFormat.format(Date(chronological.first().startedAt)),
+                    style = MaterialTheme.typography.labelSmall
+                )
+                Text(
+                    text = progressDateFormat.format(Date(chronological.last().startedAt)),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
             items(summaries, key = { it.sessionId }) { s ->
