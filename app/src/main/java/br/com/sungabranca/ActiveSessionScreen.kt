@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -251,13 +252,20 @@ fun ActiveSessionScreen(
             title = { Text("Sair do treino?") },
             text = { Text("Finalizar guarda o treino no histórico. Descartar apaga o que foi registrado.") },
             confirmButton = {
-                Column {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(onClick = { showExit = false }) { Text("Continuar treinando") }
                     TextButton(onClick = finish) { Text("Finalizar treino") }
-                    TextButton(onClick = discard) { Text("Descartar treino") }
+                    TextButton(
+                        onClick = discard,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) { Text("Descartar treino") }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExit = false }) { Text("Continuar treinando") }
             }
         )
     }
