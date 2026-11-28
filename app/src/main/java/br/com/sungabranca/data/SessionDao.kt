@@ -25,6 +25,9 @@ interface SessionDao {
     @Delete
     suspend fun deleteSession(session: SessionEntity)
 
+    @Delete
+    suspend fun deleteSessions(sessions: List<SessionEntity>)
+
     @Query("SELECT * FROM set_logs WHERE sessionId = :sessionId ORDER BY completedAt")
     fun observeSetLogs(sessionId: Long): Flow<List<SetLogEntity>>
 

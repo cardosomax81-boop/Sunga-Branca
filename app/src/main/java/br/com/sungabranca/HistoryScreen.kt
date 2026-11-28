@@ -1,15 +1,20 @@
 package br.com.sungabranca
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +55,7 @@ private fun describeSession(s: SessionEntity): String {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     sessionDao: SessionDao,
@@ -60,6 +66,9 @@ fun HistoryScreen(
     val sessions by remember { sessionDao.observeSessions() }
         .collectAsState(initial = emptyList())
     var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var checkedIds by remember { mutableStateOf(setOf<Long>()) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val selected = sessions.firstOrNull { it.id == selectedId }
     if (selected != null) {
@@ -74,12 +83,44 @@ fun HistoryScreen(
         return
     }
 
+    // Só conta o que ainda existe na lista.
+    val chosen = sessions.filter { it.id in checkedIds }
+    val selectionMode = chosen.isNotEmpty()
+
+    BackHandler(enabled = selectionMode) { checkedIds = emptySet() }
+
     Column(modifier = modifier) {
-        Text(
-            text = "${sessions.size} treinos registrados",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(16.dp)
-        )
+        if (selectionMode) {
+            Text(
+                text = if (chosen.size == 1) "1 treino selecionado" else "${chosen.size} treinos selecionados",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = { checkedIds = emptySet() }) { Text("Cancelar") }
+                TextButton(onClick = {
+                    checkedIds = sessions.filter { it.finishedAt != null }.map { it.id }.toSet()
+                }) { Text("Selecionar tudo") }
+                TextButton(
+                    onClick = { showDeleteDialog = true },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Excluir (${chosen.size})") }
+            }
+        } else {
+            Text(
+                text = "${sessions.size} treinos registrados",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
         if (sessions.isEmpty()) {
             Text(
                 text = "Nada por aqui ainda. Inicie um treino na aba Treinos.",
@@ -88,14 +129,68 @@ fun HistoryScreen(
         }
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
             items(sessions, key = { it.id }) { session ->
+                val isChecked = session.id in checkedIds
+                val isOpen = session.finishedAt == null
+                val toggle = {
+                    checkedIds = if (isChecked) checkedIds - session.id else checkedIds + session.id
+                }
                 ListItem(
                     headlineContent = { Text(session.workoutName) },
                     supportingContent = { Text(describeSession(session)) },
-                    modifier = Modifier.clickable { selectedId = session.id }
+                    leadingContent = if (selectionMode) {
+                        {
+                            Checkbox(
+                                checked = isChecked,
+                                onCheckedChange = null,
+                                enabled = !isOpen
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    modifier = Modifier.combinedClickable(
+                        onClick = {
+                            if (selectionMode) {
+                                if (!isOpen) toggle()
+                            } else {
+                                selectedId = session.id
+                            }
+                        },
+                        onLongClick = { if (!isOpen) toggle() }
+                    )
                 )
                 HorizontalDivider()
             }
         }
+    }
+
+    if (showDeleteDialog && selectionMode) {
+        val count = chosen.size
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text(if (count == 1) "Excluir 1 treino?" else "Excluir $count treinos?")
+            },
+            text = {
+                Text("Isso apaga os treinos selecionados e todas as séries registradas neles. Não dá para desfazer.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val toDelete = chosen
+                        showDeleteDialog = false
+                        checkedIds = emptySet()
+                        scope.launch { sessionDao.deleteSessions(toDelete) }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Excluir") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+            }
+        )
     }
 }
 
